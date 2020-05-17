@@ -24,10 +24,10 @@ public class KMeans {
 				temp = r.nextInt(dataset.length);
 			centroids.put(temp, new ArrayList<Float>()); // consider a list of data for each centeroid
 		}
-		int counter = 0;
-		while (counter < 1000) {// number of times that the procedure will loop! on the algorithm there is a
+		int counter = 5;
+		while (counter > 0) {// number of times that the procedure will loop! on the algorithm there is a
 								// stop condition but I used loop
-			counter++;
+			counter--;
 
 			for (int i = 0; i < dataset.length; i++) {// for each data in data set
 				float min = Integer.MAX_VALUE;
@@ -41,7 +41,7 @@ public class KMeans {
 				}
 				centroids.get(key).add(dataset[i]);// add the data into the centeroid list
 			}
-			if (counter != 1000) {
+			if (counter != 0) {
 				newCentroids.clear();
 				centroids.forEach((e, v) -> {// recalculating the centeroid
 					newCentroids.put(sum(v) / v.size(), new ArrayList<>());
