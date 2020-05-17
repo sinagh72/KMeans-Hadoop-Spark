@@ -11,7 +11,7 @@ public class KMeans {
 		// num of cluster
 		int k = 3;
 		// data set
-		float[] dataset = new float[] { 1, 2, 3, 4, 5, 21, 4, 5, 55, 2221, 3, 4, 44, 223, 332, 221, 423, 223, 224 };
+		float[] dataset = new float[] { 1, 2, 3, 4, 5, 21, 8, 9, 55, 2221, 10, 11, 44, 223, 332, 221, 423, 229, 224 };
 		// centroid of the k means (mu)
 		Map<Float, ArrayList<Float>> centroids = new HashMap<Float, ArrayList<Float>>(k);
 		// clone
@@ -67,6 +67,8 @@ public class KMeans {
 		for (float i : array) {
 			sum += i;
 		}
+		if (sum == 0)// avoid 0/0
+			sum++;
 		return sum;
 	}
 
