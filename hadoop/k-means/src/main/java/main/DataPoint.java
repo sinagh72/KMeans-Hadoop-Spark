@@ -9,25 +9,20 @@ import java.util.stream.IntStream;
 import org.apache.hadoop.io.Writable;
 
 public class DataPoint implements Writable, Comparable<DataPoint> {
-	private ArrayList<DataPoint> centroids;
 	private ArrayList<Double> vector;
 	private double minDistance = 0;
 
 	public static DataPoint copy(final DataPoint dp) {
-		return new DataPoint(dp.centroids, dp.vector);
+		return new DataPoint(dp.vector);
 	}
 
 	public DataPoint() {
 		// TODO Auto-generated constructor stub
 	}
 
-	public DataPoint(final ArrayList<DataPoint> centroids, final ArrayList<Double> vector) {
-		this.centroids = centroids;
+	public DataPoint(final ArrayList<Double> vector) {
 		this.vector = vector;
 		// this.vector = vector.clone();
-	}
-	public DataPoint(final String[]centroids) {
-		
 	}
 
 	@Override
@@ -50,6 +45,25 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 		return 0;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		DataPoint that = (DataPoint) obj;
+		if (that.getVector().size() != this.getVector().size())
+			return false;
+		for (int i = 0; i < that.getVector().size(); i++) {
+			if (that.getVector().get(i) != this.getVector().get(i))
+				return false;
+		}
+		return true;
+
+	}
+
 	public double norm(int norm) {
 		return Math.pow(Math.abs(vector.stream().mapToDouble(x -> Math.pow(x, norm)).sum()), (double) 1 / norm);
 	}
@@ -60,6 +74,12 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 						- IntStream.range(0, this.vector.size())
 								.mapToDouble(i -> 2 * this.vector.get(i) * that.vector.get(i)).sum(),
 				(double) 1 / norm);
+	}
+
+	public void set(String[] tokens) {
+		for (String str : tokens) {
+			vector.add(Double.parseDouble(str));
+		}
 	}
 
 	public int findNearestCentroid(ArrayList<DataPoint> centroids) {
@@ -75,28 +95,21 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 		return index;
 	}
 
-	public ArrayList<DataPoint> getCentroids() {
-		return centroids;
-	}
-
-	public void setCentroids(ArrayList<DataPoint> centroids) {
-		this.centroids = centroids;
-	}
-
 	public double getMinDistance() {
 		return minDistance;
 	}
 
-	public void setMinDistance(double minDistance) {
-		this.minDistance = minDistance;
+	public void addMinDistance(double minDistance) {
+		this.minDistance += minDistance;
 	}
 
-	public ArrayList<Double> getValues() {
+	public ArrayList<Double> getVector() {
 		return vector;
 	}
 
-	public void addValues(double value) {
-		this.vector.add(value);
+	public void setVector(final ArrayList<Double> vector) {
+		this.vector = vector;
+
 	}
 
 	@Override
