@@ -5,8 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class KMeans {
-
+public class SingleNodeKMeans {
 	public static void main(String[] args) {
 		// num of cluster
 		int k = 3;
