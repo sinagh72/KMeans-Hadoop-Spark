@@ -16,7 +16,18 @@ public class KMeans {
 		private ArrayList<DataPoint> centroids;
 
 		public void setup(Context context) throws IOException, InterruptedException {
-			this.centroids = Main.centroids;
+			int k = context.getConfiguration().getInt("k-means.cluster.number", 1);
+			int col = context.getConfiguration().getInt("k-means.vector.size", 1);
+
+			this.centroids = new ArrayList<>(k);
+			for (int i = 0; i < k; i++) {
+				DataPoint p = new DataPoint();
+				for (int j = 0; j < col; j++) {
+					p.addVectorElement(context.getConfiguration().getDouble("k-means.centroids" + i + "" + j, 1));
+				}
+				centroids.add(p);
+			}
+			System.out.println(centroids.toString());
 		}
 
 		// reuse Hadoop's Writable objects
@@ -31,6 +42,7 @@ public class KMeans {
 				return;
 
 			String[] tokens = record.trim().split(",");
+			System.out.println(tokens);
 			reducerValue.set(tokens);
 			reducerKey.set(reducerValue.findNearestCentroid(this.centroids) + ""); // set the name as key
 			context.write(reducerKey, reducerValue);

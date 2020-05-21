@@ -2,18 +2,21 @@ package main;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.stream.IntStream;
+
+import org.apache.kerby.util.SysUtil;
 
 public class Test {
 	public static void main(String[] args) throws IOException {
-//		DataPoint[] points = new DataPoint[] {};
-		ArrayList<Integer> d = new ArrayList<Integer>();
-		d.add(1);
-		d.add(4);
-		d.add(5);
-//		ArrayList<Integer> z = new ArrayList<Integer>(d);
-//		d.set(0, -1);
-//		d.add(23);
-//		System.out.println(z.toString().replace("[", "").replace("]", ""));
+		DataPoint p1 = new DataPoint();
+		p1.addVectorElement(3);
+		p1.addVectorElement(4);
+
+		DataPoint p2 = new DataPoint();
+		p2.addVectorElement(4);
+		p2.addVectorElement(3);
+
+		System.out.println(p1.distance(p2, 2));
 
 	}
 

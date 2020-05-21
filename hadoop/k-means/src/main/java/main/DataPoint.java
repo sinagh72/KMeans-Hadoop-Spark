@@ -17,7 +17,7 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 	}
 
 	public DataPoint() {
-		// TODO Auto-generated constructor stub
+		this.vector = new ArrayList<Double>();
 	}
 
 	public DataPoint(final ArrayList<Double> vector) {
@@ -64,16 +64,13 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 
 	}
 
-	public double norm(int norm) {
-		return Math.pow(Math.abs(vector.stream().mapToDouble(x -> Math.pow(x, norm)).sum()), (double) 1 / norm);
+	public double norm(int n) {
+		return Math.pow(Math.abs(vector.stream().mapToDouble(x -> Math.pow(x, n)).sum()), (double) 1 / n);
 	}
 
-	public double distance(DataPoint that, int norm) {
-		return Math.pow(
-				Math.pow(this.norm(norm), norm) + Math.pow(that.norm(norm), norm)
-						- IntStream.range(0, this.vector.size())
-								.mapToDouble(i -> 2 * this.vector.get(i) * that.vector.get(i)).sum(),
-				(double) 1 / norm);
+	public double distance(DataPoint that, int n) {
+		return Math.pow(Math.pow(this.norm(n), n) + Math.pow(that.norm(n), n) - IntStream.range(0, this.vector.size()-1)
+				.mapToDouble(i -> 2 * this.vector.get(i) * that.vector.get(i)).sum(), (double) 1 / n);
 	}
 
 	public void set(String[] tokens) {
@@ -122,6 +119,15 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 	public void readFields(DataInput in) throws IOException {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public String toString() {
+		return this.vector.toString();
+	}
+
+	public void addVectorElement(double element) {
+		this.vector.add(element);
 	}
 
 }

@@ -17,7 +17,7 @@ import org.apache.hadoop.util.GenericOptionsParser;
 
 public class Main {
 
-	static ArrayList<DataPoint> centroids;
+	private static ArrayList<DataPoint> centroids;
 
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
@@ -30,7 +30,7 @@ public class Main {
 		System.out.println("args[1]: <number of data points>=" + otherArgs[1]);
 		System.out.println("args[2]: <input>=" + otherArgs[2]);
 		System.out.println("args[3]: <data output>=" + otherArgs[3]);
-		System.out.println("args[3]: <centroid output>=" + otherArgs[4]);
+		System.out.println("args[4]: <centroid output>=" + otherArgs[4]);
 		// set the number of clusters
 		int k = Integer.parseInt(otherArgs[0]);
 		// set the number of clusters
@@ -41,15 +41,14 @@ public class Main {
 		//
 		boolean isChanged = true;
 		int counter = 1;
-
+		System.out.println("centroids: " + centroids.toString());
 		while (isChanged && counter < Integer.MAX_VALUE) {
-
 			Job job = Job.getInstance(conf, "MapReduceKMeans");
 			job.setJarByClass(Main.class);
 
 			// set mapper/combiner/reducer
 			job.setMapperClass(KMeans.KMeansMapper.class);
-			job.setCombinerClass(KMeans.KMeansCombiner.class);
+//			job.setCombinerClass(KMeans.KMeansCombiner.class);
 			job.setReducerClass(KMeans.KMeansReducer.class);
 
 			// define mapper's output key-value
@@ -60,6 +59,18 @@ public class Main {
 			// define reducer's output key-value
 			job.setOutputKeyClass(Text.class);
 			job.setOutputValueClass(Text.class);
+
+			// pass the number of cluster
+			job.getConfiguration().setInt("k-means.cluster.number", k);
+			// pass the size of a vector
+			job.getConfiguration().setInt("k-means.vector.size", centroids.get(0).getVector().size());
+			// pass the centroids
+			for (int i = 0; i < k; i++) {
+				for (int j = 0; j < centroids.get(i).getVector().size(); j++) {
+					job.getConfiguration().setDouble("k-means.centroids" + i + "" + j,
+							centroids.get(i).getVector().get(j));
+				}
+			}
 
 			// define I/O
 			FileInputFormat.addInputPath(job, new Path(otherArgs[2]));
