@@ -23,11 +23,11 @@ public class Main {
 		Configuration conf = new Configuration();
 		String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
 		if (otherArgs.length != 5) {
-			System.err.println("Usage: k-means <k> <matrix length> <input> <data output> <centroid output>");
+			System.err.println("Usage: k-means <k> <number of data points> <input> <data output> <centroid output>");
 			System.exit(1);
 		}
 		System.out.println("args[0]: <k>=" + otherArgs[0]);
-		System.out.println("args[1]: <matrix length>=" + otherArgs[1]);
+		System.out.println("args[1]: <number of data points>=" + otherArgs[1]);
 		System.out.println("args[2]: <input>=" + otherArgs[2]);
 		System.out.println("args[3]: <data output>=" + otherArgs[3]);
 		System.out.println("args[3]: <centroid output>=" + otherArgs[4]);
@@ -69,20 +69,23 @@ public class Main {
 			job.setOutputFormatClass(TextOutputFormat.class);
 
 			System.exit(job.waitForCompletion(true) ? 0 : 1);
+			//
+			isChanged = false;
 			// check if the centroids values has been changed or not
 			BufferedReader reader = new BufferedReader(new InputStreamReader(hdfs.open(new Path(otherArgs[3]))));
 			for (int i = 0; i < k; i++) {
 				DataPoint p = new DataPoint();
 				p.set(reader.readLine().trim().split(","));
 				if (!centroids.contains(p)) {
-					isChanged = false;
-					System.out.println("KMEANS finished iteration:>> " + counter + " || means stable: " + centroids);
-					break;
+					isChanged = true;
+					// updating centroids
+					centroids.remove(k);
+					centroids.add(p);
 				}
-				// updating centroids
-				centroids.remove(k);
-				centroids.add(p);
 			}
+			if (!isChanged)
+				System.out.println("k-means terminated in round: " + counter + " with: " + centroids);
+
 			reader.close();
 			counter--;
 		}
