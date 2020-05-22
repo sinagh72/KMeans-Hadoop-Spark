@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.stream.IntStream;
 
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 
 public class DataPoint implements Writable, Comparable<DataPoint> {
@@ -37,7 +38,7 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 		if (this.minDistance == that.minDistance) {
 			if (this.norm(2) > that.norm(2))
 				return 1;
-			if (this.norm(2) > that.norm(2))
+			if (this.norm(2) < that.norm(2))
 				return -1;
 			else
 				return 0;
@@ -69,7 +70,7 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 	}
 
 	public double distance(DataPoint that, int n) {
-		return Math.pow(Math.pow(this.norm(n), n) + Math.pow(that.norm(n), n) - IntStream.range(0, this.vector.size()-1)
+		return Math.pow(Math.pow(this.norm(n), n) + Math.pow(that.norm(n), n) - IntStream.range(0, that.vector.size())
 				.mapToDouble(i -> 2 * this.vector.get(i) * that.vector.get(i)).sum(), (double) 1 / n);
 	}
 
@@ -86,7 +87,7 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 			double dist = this.distance(cent, 2);
 			if (dist < this.minDistance) {
 				this.minDistance = dist;
-				index = centroids.indexOf(cent);
+				index++;
 			}
 		}
 		return index;
@@ -111,19 +112,27 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 
 	@Override
 	public void write(DataOutput out) throws IOException {
-		// TODO Auto-generated method stub
+		String outStr = this.toString() + ";" + this.minDistance;
+		new Text(outStr.trim()).write(out);
 
 	}
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
-		// TODO Auto-generated method stub
+		Text t = new Text();
+		t.readFields(in);
+		String[] vals = t.toString().split(";");
+		this.minDistance = Double.parseDouble(vals[1]);
+		String[] vector = vals[0].split(",");
+		for (String string : vector) {
+			this.vector.add(Double.parseDouble(string));
+		}
 
 	}
 
 	@Override
 	public String toString() {
-		return this.vector.toString();
+		return this.vector.toString().replace("[", "").replace("]", "").trim();
 	}
 
 	public void addVectorElement(double element) {
