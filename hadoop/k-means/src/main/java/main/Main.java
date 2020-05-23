@@ -30,16 +30,18 @@ public class Main {
 		System.out.println("args[4]: <output>=" + otherArgs[4]);
 		// set the number of clusters
 		int k = Integer.parseInt(otherArgs[0]);
-		// set the number of clusters
+		// set the rows
 		int n = Integer.parseInt(otherArgs[1]);
+		// set the columns
+		int m = Integer.parseInt(otherArgs[2]);
 		// selecting the random k points
 		FileSystem hdfs = FileSystem.get(conf);
 		//
-		Centroid.run(conf, k, n, otherArgs[3], otherArgs[4] + "/pre");
+		Centroid.run(conf, k, n, m, otherArgs[3], otherArgs[4] + "/pre");
 		//
 		boolean isChanged = true;
 		int counter = 1;
-
+		int out = 0;
 		while (isChanged && counter < Integer.MAX_VALUE) {
 			Job kMeans = Job.getInstance(conf, "MapReduceKMeans");
 			kMeans.setJarByClass(Main.class);
@@ -70,7 +72,7 @@ public class Main {
 			kMeans.setInputFormatClass(TextInputFormat.class);
 			kMeans.setOutputFormatClass(TextOutputFormat.class);
 
-			System.exit(kMeans.waitForCompletion(true) ? 0 : 1);
+			out = kMeans.waitForCompletion(true) ? 0 : 1;
 			//
 			isChanged = false;
 			// check if the centroids values has been changed or not

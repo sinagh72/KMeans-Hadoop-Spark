@@ -35,11 +35,9 @@ public class Test {
 //		System.out.println(Arrays.toString(f));
 //		String t = "538     2442,4798,2355,4278";
 //		System.out.println(t.split("     ")[1]);
-		Configuration conf = new Configuration();
-		FileSystem hdfs = FileSystem.get(conf);
-		hdfs.delete(new Path("output"), true);
-		hdfs.rename(new Path("output2"), new Path("output"));
-		hdfs.delete(new Path("output2"), true);
+		ArrayList<DataPoint> d = new ArrayList<>(2);
+		
+		d.forEach(q -> System.out.println(2));
 
 	}
 

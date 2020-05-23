@@ -9,7 +9,6 @@ import java.util.Random;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -27,17 +26,23 @@ public class Centroid {
 		private final Text reducerValue = new Text();
 
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+			int m = context.getConfiguration().getInt("k-means.columns", 1);
+
 			String record = value.toString().trim();
 			if (record == null || record.length() == 0)
 				return;
 			String[] tokens = record.split(",");
 			reducerKey.set(tokens[0]);
-			reducerValue.set(record.substring(tokens[0].length() + 1));
+			String vector = tokens[1];
+			for (int i = 2; i < m + 1; i++) {
+				vector += "," + tokens[i];
+			}
+			reducerValue.set(vector);
 			context.write(reducerKey, reducerValue);
 		}
 	}
 
-	public static class CentroidReducer extends Reducer<Text, Text, IntWritable, Text> {
+	public static class CentroidReducer extends Reducer<Text, Text, Text, Text> {
 		private final ArrayList<Integer> randoms = new ArrayList<>();
 
 		public void setup(Context context) throws IOException, InterruptedException {
@@ -56,14 +61,14 @@ public class Centroid {
 
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			if (this.randoms.contains(Integer.parseInt(key.toString()))) {
-				context.write(new IntWritable(randoms.indexOf(Integer.parseInt(key.toString()))),
+				context.write(new Text(randoms.indexOf(Integer.parseInt(key.toString())) + ";"),
 						values.iterator().next());
 			}
 
 		}
 	}
 
-	public static void run(Configuration conf, int k, int n, String input, String output)
+	public static int run(Configuration conf, int k, int n, int m, String input, String output)
 			throws IllegalArgumentException, IOException, ClassNotFoundException, InterruptedException {
 		Job centroidFinder = Job.getInstance(conf, "finding-centroids");
 		centroidFinder.setJarByClass(Main.class);
@@ -78,13 +83,15 @@ public class Centroid {
 		// define reducer's output key-value
 
 		// define reducer's output key-value
-		centroidFinder.setOutputKeyClass(IntWritable.class);
+		centroidFinder.setOutputKeyClass(Text.class);
 		centroidFinder.setOutputValueClass(Text.class);
 
 		// pass the number of cluster
 		centroidFinder.getConfiguration().setInt("k-means.cluster.number", k);
-		// pass the size of a vector
+		// pass the rows
 		centroidFinder.getConfiguration().setInt("k-means.rows", n);
+		// pass the columns
+		centroidFinder.getConfiguration().setInt("k-means.columns", m);
 
 		// define I/O
 		FileInputFormat.addInputPath(centroidFinder, new Path(input));
@@ -93,18 +100,22 @@ public class Centroid {
 		centroidFinder.setInputFormatClass(TextInputFormat.class);
 		centroidFinder.setOutputFormatClass(TextOutputFormat.class);
 
-		System.exit(centroidFinder.waitForCompletion(true) ? 0 : 1);
+		return centroidFinder.waitForCompletion(true) ? 0 : 1;
 	}
 
 	public static ArrayList<DataPoint> readCentroids(int k, String path, FileSystem hdfs)
 			throws IllegalArgumentException, IOException {
 		ArrayList<DataPoint> dp = new ArrayList<DataPoint>(k);
+		for (int i = 0; i < k; i++) {
+			dp.add(new DataPoint());
+		}
 		BufferedReader reader = new BufferedReader(new InputStreamReader(hdfs.open(new Path(path))));
 		String line = reader.readLine();
 		while (line != null) {
 			DataPoint p = new DataPoint();
-			p.set(line.split("     ")[1].trim().split(","));
-			dp.add(p);
+			String[] vals = line.trim().split(";");
+			p.set(vals[1].split(","));
+			dp.add(Integer.parseInt(vals[0]), p);
 		}
 		reader.close();
 		return dp;
