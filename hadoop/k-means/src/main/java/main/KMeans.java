@@ -19,9 +19,13 @@ public class KMeans {
 		private ArrayList<DataPoint> centroids;
 		private final Text reducerKey = new Text();
 		private final DataPoint reducerValue = new DataPoint();
+		private int m;
+		private int n;
 
 		public void setup(Context context) throws IOException, InterruptedException {
 			int k = context.getConfiguration().getInt("k-means.cluster.number", 1);
+			m = context.getConfiguration().getInt("k-means.columns", 1);
+			n = context.getConfiguration().getInt("k-means.rows", 1);
 			String path = context.getConfiguration().getStrings("k-means.centroid.path")[0];
 			this.centroids = Centroid.readCentroids(k, path, FileSystem.get(context.getConfiguration()));
 		}
@@ -31,11 +35,17 @@ public class KMeans {
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 
-			String record = value.toString();
+			String record = value.toString().trim();
 			if (record == null || record.length() == 0)
 				return;
-			String[] tokens = record.trim().split(",");
-			reducerValue.set(tokens);
+			String[] tokens = record.split(",");
+			if (Integer.parseInt(tokens[0]) > n - 1)
+				return;
+			String vector = tokens[1];
+			for (int i = 2; i < m + 1; i++) {
+				vector += "," + tokens[i];
+			}
+			reducerValue.set(vector.split(","));
 			reducerKey.set(reducerValue.findNearestCentroid(this.centroids) + ""); // set the name as key
 			context.write(reducerKey, reducerValue);
 		}

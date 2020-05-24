@@ -64,7 +64,10 @@ public class Main {
 			kMeans.getConfiguration().setInt("k-means.cluster.number", k);
 			// pass the file of a selected centroids
 			kMeans.getConfiguration().setStrings("k-means.centroid.path", otherArgs[4] + "/pre/part-r-00000");
-
+			// pass the rows
+			kMeans.getConfiguration().setInt("k-means.rows", n);
+			// pass the columns
+			kMeans.getConfiguration().setInt("k-means.columns", m);
 			// define I/O
 			FileInputFormat.addInputPath(kMeans, new Path(otherArgs[3]));
 			FileOutputFormat.setOutputPath(kMeans, new Path(otherArgs[4] + "/new"));
