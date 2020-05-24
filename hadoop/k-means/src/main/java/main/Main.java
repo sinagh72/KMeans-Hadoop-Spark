@@ -41,7 +41,6 @@ public class Main {
 		//
 		boolean isChanged = true;
 		int counter = 1;
-		int out = 0;
 		while (isChanged && counter < Integer.MAX_VALUE) {
 			Job kMeans = Job.getInstance(conf, "MapReduceKMeans");
 			kMeans.setJarByClass(Main.class);
@@ -75,7 +74,7 @@ public class Main {
 			kMeans.setInputFormatClass(TextInputFormat.class);
 			kMeans.setOutputFormatClass(TextOutputFormat.class);
 
-			out = kMeans.waitForCompletion(true) ? 0 : 1;
+			int out = kMeans.waitForCompletion(true) ? 0 : 1;
 			//
 			isChanged = false;
 			// check if the centroids values has been changed or not
