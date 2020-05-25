@@ -39,20 +39,22 @@ public class Main {
 		//
 		Centroid.run(conf, k, n, m, otherArgs[3], otherArgs[4] + "/pre");
 		//
+//		ArrayList<DataPoint> centroids = Centroid.readCentroids(k, otherArgs[4] + "/pre/part-r-00000", hdfs);
+		//
+
 		boolean isChanged = true;
-		int counter = 1;
-		while (isChanged && counter < Integer.MAX_VALUE) {
+		int counter = 5;
+//		while (isChanged && counter > 0) {
 			Job kMeans = Job.getInstance(conf, "MapReduceKMeans");
 			kMeans.setJarByClass(Main.class);
-
 			// set mapper/combiner/reducer
 			kMeans.setMapperClass(KMeans.KMeansMapper.class);
-			kMeans.setCombinerClass(KMeans.KMeansCombiner.class);
+//			kMeans.setCombinerClass(KMeans.KMeansCombiner.class);
 			kMeans.setReducerClass(KMeans.KMeansReducer.class);
 
 			// define mapper's output key-value
 			kMeans.setMapOutputKeyClass(Text.class);
-			kMeans.setMapOutputValueClass(DataPoint.class);
+			kMeans.setMapOutputValueClass(Text.class);
 			// define reducer's output key-value
 
 			// define reducer's output key-value
@@ -89,14 +91,15 @@ public class Main {
 
 			}
 			if (isChanged) {
-				hdfs.delete(new Path(otherArgs[4] + "/pre"), true);
-				hdfs.rename(new Path(otherArgs[4] + "/new"), new Path(otherArgs[4] + "/pre"));
-				hdfs.delete(new Path(otherArgs[4] + "/new"), true);
+//				System.out.println("changed");
+//				hdfs.delete(new Path(otherArgs[4] + "/pre"), true);
+//				hdfs.rename(new Path(otherArgs[4] + "/new"), new Path(otherArgs[4] + "/pre"));
+//				hdfs.delete(new Path(otherArgs[4] + "/new"), true);
 			}
 			reader.close();
 			reader2.close();
 			counter--;
-		}
+//		}
 	}
 
 }

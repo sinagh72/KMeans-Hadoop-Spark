@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -15,10 +14,9 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 public class KMeans {
-	public static class KMeansMapper extends Mapper<LongWritable, Text, Text, DataPoint> {
-		private ArrayList<DataPoint> centroids;
-		private final Text reducerKey = new Text();
-		private final DataPoint reducerValue = new DataPoint();
+	public static class KMeansMapper extends Mapper<LongWritable, Text, Text, Text> {
+		private final ArrayList<DataPoint> centroids = new ArrayList<>();
+
 		private int m;
 		private int n;
 
@@ -27,10 +25,12 @@ public class KMeans {
 			m = context.getConfiguration().getInt("k-means.columns", 1);
 			n = context.getConfiguration().getInt("k-means.rows", 1);
 			String path = context.getConfiguration().getStrings("k-means.centroid.path")[0];
-			this.centroids = Centroid.readCentroids(k, path, FileSystem.get(context.getConfiguration()));
+			Centroid.readCentroids(centroids, k, path, FileSystem.get(context.getConfiguration()));
 		}
 
 		// reuse Hadoop's Writable objects
+		private final Text reducerKey = new Text();
+		private final Text reducerValue = new Text();
 
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
@@ -45,57 +45,54 @@ public class KMeans {
 			for (int i = 2; i < m + 1; i++) {
 				vector += "," + tokens[i];
 			}
-			reducerValue.set(vector.split(","));
-			reducerKey.set(reducerValue.findNearestCentroid(this.centroids) + ""); // set the name as key
+			DataPoint dp = new DataPoint();
+			dp.set(vector.split(","));
+			reducerValue.set(vector + ";" + 1);
+			reducerKey.set(dp.findNearestCentroid(this.centroids) + ""); // set the name as key
 			context.write(reducerKey, reducerValue);
 		}
 	}
 
-	public static class KMeansCombiner extends Reducer<Text, DataPoint, Text, Text> {
+	public static class KMeansCombiner extends Reducer<Text, Text, Text, Text> {
+		private int m = 0;
 
 		public void setup(Context context) throws IOException, InterruptedException {
-
+			this.m = context.getConfiguration().getInt("k-means.columns", 1);
 		}
 
-		public void reduce(Text key, Iterable<DataPoint> values, Context context)
-				throws IOException, InterruptedException {
+		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			// build the unsorted list of data points
-			List<DataPoint> dataPoints = new ArrayList<DataPoint>();
-			values.forEach(dp -> dataPoints.add(DataPoint.copy(dp)));
-			// sort the data points in memory
-//			Collections.sort(dataPoints);
-			// aggregation of data points (vectors) in a same cluster
-			ArrayList<Double> sumVectors = new ArrayList<Double>(
-					Collections.nCopies(dataPoints.get(0).getVector().size(), (double) 0));
-
-			//
-			dataPoints.forEach(dp -> {
-				IntStream.range(0, dp.getVector().size())
-						.mapToDouble(i -> sumVectors.set(i, dp.getVector().get(i) + sumVectors.get(i)));
-			});
-			//
-			context.write(key, new Text(sumVectors.toString() + ";" + (double) dataPoints.size()));
+			double n = 0;
+			double[] sumVectors = new double[m];
+			for (Text txt : values) {
+				String[] vals = txt.toString().trim().split(";");
+				n += Double.parseDouble(vals[1]);
+				int i = 0;
+				for (String val : vals[0].trim().split(",")) {
+					sumVectors[i] += Double.parseDouble(val);
+					i++;
+				}
+			}
+			context.write(key, new Text(Arrays.toString(sumVectors).replace("[", "").replace("]", "") + ";" + n));
 		}
 	}
 
 	public static class KMeansReducer extends Reducer<Text, Text, Text, Text> {
-		private int col = 0;
+		private int m = 0;
 
 		public void setup(Context context) throws IOException, InterruptedException {
-			this.col = context.getConfiguration().getInt("k-means.vector.size", 1);
+			this.m = context.getConfiguration().getInt("k-means.columns", 1);
 		}
 
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-
 			// build the unsorted list of data points
 			double n = 0;
-			double[] sumVectors = new double[col];
-			Iterator<Text> itr = values.iterator();
-			while (itr.hasNext()) {
-				String[] vals = itr.next().toString().trim().split(";");
+			double[] sumVectors = new double[m];
+			for (Text txt : values) {
+				String[] vals = txt.toString().trim().split(";");
 				n += Double.parseDouble(vals[1]);
 				int i = 0;
-				for (String val : vals[0].trim().replace("[", "").replace("]", "").split(",")) {
+				for (String val : vals[0].trim().split(",")) {
 					sumVectors[i] += Double.parseDouble(val);
 					i++;
 				}
@@ -104,21 +101,21 @@ public class KMeans {
 			for (int j = 0; j < sumVectors.length; j++) {
 				sumVectors[j] /= n;
 			}
-			// sort the data points in memory
-//			Collections.sort(dataPoints);
-			// aggregation of data points (vectors) in a same cluster
 
-			//
-
-//			dataPoints.forEach(dp -> {
-//				out.addMinDistance(dp.getMinDistance());
-//				IntStream.range(0, dp.getVector().size())
-//						.mapToDouble(i -> dp.getVector().get(i) / dataPoints.size() + sumVectors.get(i));
-//			});
-//			//
+//			List<DataPoint> dataPoints = new ArrayList<DataPoint>();
+//			for (DataPoint dp : values) {
+//				dataPoints.add(DataPoint.copy(dp));
+//			}
+//			ArrayList<Double> sumVectors = new ArrayList<Double>(
+//					Collections.nCopies(dataPoints.get(0).getVector().size(), (double) 0));
 //
-//			out.setVector(sumVectors);
-			context.write(key, new Text(Arrays.toString(sumVectors).toString().replace("[", "").replace("]", "")));
+//			dataPoints.forEach(dp -> {
+//				for (int j = 0; j < dp.getVector().size(); j++) {
+//					sumVectors.set(j, dp.getVector().get(j) / dataPoints.size() + sumVectors.get(j));
+//				}
+//			});
+//
+			context.write(new Text(key + ";"), new Text(Arrays.toString(sumVectors).replace("[", "").replace("]", "")));
 
 		}
 	}

@@ -11,39 +11,35 @@ import org.apache.hadoop.io.Writable;
 
 public class DataPoint implements Writable, Comparable<DataPoint> {
 	private ArrayList<Double> vector;
-	private double minDistance = 0;
 
 	public static DataPoint copy(final DataPoint dp) {
-		return new DataPoint(dp.vector);
+		DataPoint p = new DataPoint();
+		dp.vector.forEach(e -> p.vector.add(e));
+		return p;
 	}
 
 	public DataPoint() {
 		this.vector = new ArrayList<Double>();
 	}
 
-	public DataPoint(final ArrayList<Double> vector) {
-		this.vector = vector;
-		// this.vector = vector.clone();
-	}
-
 	@Override
 	public int compareTo(DataPoint that) {
 		// TODO Auto-generated method stub
 		if (this == that)
+			return 0;
+//		if (this.minDistance > that.minDistance)
+//			return 1;
+//		if (this.minDistance < that.minDistance)
+//			return -1;
+//		if (this.minDistance == that.minDistance) {
+		if (this.norm(2) > that.norm(2))
 			return 1;
-		if (this.minDistance > that.minDistance)
-			return 1;
-		if (this.minDistance < that.minDistance)
+		if (this.norm(2) < that.norm(2))
 			return -1;
-		if (this.minDistance == that.minDistance) {
-			if (this.norm(2) > that.norm(2))
-				return 1;
-			if (this.norm(2) < that.norm(2))
-				return -1;
-			else
-				return 0;
-		}
-		return 0;
+		else
+			return 0;
+//		}
+//		return 0;
 	}
 
 	@Override
@@ -70,36 +66,50 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 	}
 
 	public double distance(DataPoint that, int n) {
-		return Math.pow(Math.pow(this.norm(n), n) + Math.pow(that.norm(n), n) - IntStream.range(0, that.vector.size())
-				.mapToDouble(i -> 2 * this.vector.get(i) * that.vector.get(i)).sum(), (double) 1 / n);
+		double x = Math.pow(this.norm(n), n) + Math.pow(that.norm(n), n) - IntStream.range(0, that.vector.size())
+				.mapToDouble(i -> 2 * this.vector.get(i) * that.vector.get(i)).sum();
+		if (x < 0)
+			return 0;
+		return Math.pow(x, (double) 1 / n);
 	}
 
 	public void set(String[] tokens) {
+		vector.clear();
 		for (String str : tokens) {
 			vector.add(Double.parseDouble(str));
 		}
 	}
 
 	public int findNearestCentroid(ArrayList<DataPoint> centroids) {
-		this.minDistance = Double.MAX_VALUE;
+//		this.minDistance = Double.MAX_VALUE;
+//		int index = -1;
+//		for (DataPoint cent : centroids) {
+//			double dist = this.distance(cent, 2);
+//			if (dist < this.minDistance) {
+//				this.minDistance = dist;
+//				index++;
+//			}
+//		}
+
+		double minDistance = Double.MAX_VALUE;
 		int index = -1;
 		for (DataPoint cent : centroids) {
 			double dist = this.distance(cent, 2);
-			if (dist < this.minDistance) {
-				this.minDistance = dist;
+			if (dist < minDistance) {
+				minDistance = dist;
 				index++;
 			}
 		}
 		return index;
 	}
 
-	public double getMinDistance() {
-		return minDistance;
-	}
-
-	public void addMinDistance(double minDistance) {
-		this.minDistance += minDistance;
-	}
+//	public double getMinDistance() {
+//		return minDistance;
+//	}
+//
+//	public void addMinDistance(double minDistance) {
+//		this.minDistance += minDistance;
+//	}
 
 	public ArrayList<Double> getVector() {
 		return vector;
@@ -112,7 +122,8 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 
 	@Override
 	public void write(DataOutput out) throws IOException {
-		String outStr = this.toString() + ";" + this.minDistance;
+//		String outStr = this.toString() + ";" + this.minDistance;
+		String outStr = this.toString();
 		new Text(outStr.trim()).write(out);
 
 	}
@@ -121,22 +132,16 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 	public void readFields(DataInput in) throws IOException {
 		Text t = new Text();
 		t.readFields(in);
-		String[] vals = t.toString().split(";");
-		this.minDistance = Double.parseDouble(vals[1]);
-		String[] vector = vals[0].split(",");
-		for (String string : vector) {
-			this.vector.add(Double.parseDouble(string));
-		}
+//		String[] vals = t.toString().split(";");
+//		this.minDistance = Double.parseDouble(vals[1]);
+//		String[] vector = vals[0].split(",");
+		this.set(t.toString().split(","));
 
 	}
 
 	@Override
 	public String toString() {
 		return this.vector.toString().replace("[", "").replace("]", "").trim();
-	}
-
-	public void addVectorElement(double element) {
-		this.vector.add(element);
 	}
 
 }

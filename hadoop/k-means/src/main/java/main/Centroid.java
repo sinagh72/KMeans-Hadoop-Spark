@@ -35,7 +35,7 @@ public class Centroid {
 			reducerKey.set(tokens[0]);
 			String vector = tokens[1];
 			for (int i = 2; i < m + 1; i++) {
-				vector += "," + tokens[i];
+				vector += ", " + tokens[i];
 			}
 			reducerValue.set(vector);
 			context.write(reducerKey, reducerValue);
@@ -103,22 +103,21 @@ public class Centroid {
 		return centroidFinder.waitForCompletion(true) ? 0 : 1;
 	}
 
-	public static ArrayList<DataPoint> readCentroids(int k, String path, FileSystem hdfs)
+	public static void readCentroids(ArrayList<DataPoint> centroids, int k, String path, FileSystem hdfs)
 			throws IllegalArgumentException, IOException {
-		ArrayList<DataPoint> dp = new ArrayList<DataPoint>(k);
 		for (int i = 0; i < k; i++) {
-			dp.add(new DataPoint());
+			centroids.add(new DataPoint());
 		}
 		BufferedReader reader = new BufferedReader(new InputStreamReader(hdfs.open(new Path(path))));
-		String line = reader.readLine();
-		while (line != null) {
+
+		for (int i = 0; i < k; i++) {
+			String line = reader.readLine();
 			DataPoint p = new DataPoint();
 			String[] vals = line.trim().split(";");
 			p.set(vals[1].split(","));
-			dp.add(Integer.parseInt(vals[0]), p);
+			centroids.set(Integer.parseInt(vals[0]), p);
 		}
 		reader.close();
-		return dp;
 	}
 
 }
