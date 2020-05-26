@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -37,19 +38,20 @@ public class Main {
 		// selecting the random k points
 		FileSystem hdfs = FileSystem.get(conf);
 		//
-		Centroid.run(conf, k, n, m, otherArgs[3], otherArgs[4] + "/pre");
+//		Centroid.run(conf, k, n, m, otherArgs[3], otherArgs[4] + "/pre");
 		//
-//		ArrayList<DataPoint> centroids = Centroid.readCentroids(k, otherArgs[4] + "/pre/part-r-00000", hdfs);
-		//
+		if (hdfs.exists(new Path(otherArgs[4] + "/temp")))
+			hdfs.delete(new Path(otherArgs[4] + "/temp"), true);
+		FileUtil.copy(hdfs, new Path(otherArgs[4] + "/pre"), hdfs, new Path(otherArgs[4] + "/temp"), false, conf);
 
 		boolean isChanged = true;
-		int counter = 5;
-//		while (isChanged && counter > 0) {
+		int counter = 10;
+		while (isChanged && counter > 0) {
 			Job kMeans = Job.getInstance(conf, "MapReduceKMeans");
 			kMeans.setJarByClass(Main.class);
 			// set mapper/combiner/reducer
 			kMeans.setMapperClass(KMeans.KMeansMapper.class);
-//			kMeans.setCombinerClass(KMeans.KMeansCombiner.class);
+			kMeans.setCombinerClass(KMeans.KMeansCombiner.class);
 			kMeans.setReducerClass(KMeans.KMeansReducer.class);
 
 			// define mapper's output key-value
@@ -64,7 +66,7 @@ public class Main {
 			// pass the number of cluster
 			kMeans.getConfiguration().setInt("k-means.cluster.number", k);
 			// pass the file of a selected centroids
-			kMeans.getConfiguration().setStrings("k-means.centroid.path", otherArgs[4] + "/pre/part-r-00000");
+			kMeans.getConfiguration().setStrings("k-means.centroid.path", otherArgs[4] + "/temp/part-r-00000");
 			// pass the rows
 			kMeans.getConfiguration().setInt("k-means.rows", n);
 			// pass the columns
@@ -82,24 +84,33 @@ public class Main {
 			// check if the centroids values has been changed or not
 
 			BufferedReader reader = new BufferedReader(
-					new InputStreamReader(hdfs.open(new Path(otherArgs[4] + "/pre/part-r-00000"))));
+					new InputStreamReader(hdfs.open(new Path(otherArgs[4] + "/temp/part-r-00000"))));
 			BufferedReader reader2 = new BufferedReader(
 					new InputStreamReader(hdfs.open(new Path(otherArgs[4] + "/new/part-r-00000"))));
 			for (int i = 0; i < k; i++) {
-				if (!reader.readLine().equals(reader2.readLine()))
+				String r1 = reader.readLine();
+				String r2 = reader2.readLine();
+				System.out.println("====================");
+				System.out.println("data from r1: " + r1);
+				System.out.println("data from r2: " + r2);
+				System.out.println("====================");
+				if (!r1.equals(r2))
 					isChanged = true;
 
 			}
 			if (isChanged) {
-//				System.out.println("changed");
-//				hdfs.delete(new Path(otherArgs[4] + "/pre"), true);
-//				hdfs.rename(new Path(otherArgs[4] + "/new"), new Path(otherArgs[4] + "/pre"));
-//				hdfs.delete(new Path(otherArgs[4] + "/new"), true);
+				System.out.println("changed");
+				hdfs.delete(new Path(otherArgs[4] + "/temp"), true);
+				hdfs.rename(new Path(otherArgs[4] + "/new"), new Path(otherArgs[4] + "/temp"));
+				hdfs.delete(new Path(otherArgs[4] + "/new"), true);
 			}
+			System.out.println("====================");
+			System.out.println(counter);
+			System.out.println("====================");
 			reader.close();
 			reader2.close();
 			counter--;
-//		}
+		}
 	}
 
 }
