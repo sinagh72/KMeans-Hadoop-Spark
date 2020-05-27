@@ -112,6 +112,8 @@ public class Centroid {
 
 		for (int i = 0; i < k; i++) {
 			String line = reader.readLine();
+			if (line == null)
+				break;
 			DataPoint p = new DataPoint();
 			String[] vals = line.trim().split(";");
 			p.set(vals[1].split(","));

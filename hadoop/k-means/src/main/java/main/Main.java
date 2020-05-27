@@ -43,15 +43,15 @@ public class Main {
 		if (hdfs.exists(new Path(otherArgs[4] + "/temp")))
 			hdfs.delete(new Path(otherArgs[4] + "/temp"), true);
 		FileUtil.copy(hdfs, new Path(otherArgs[4] + "/pre"), hdfs, new Path(otherArgs[4] + "/temp"), false, conf);
-
+		long time = System.currentTimeMillis();
 		boolean isChanged = true;
-		int counter = 10;
-		while (isChanged && counter > 0) {
+		int counter = 0;
+		while (isChanged && counter < 100) {
 			Job kMeans = Job.getInstance(conf, "MapReduceKMeans");
 			kMeans.setJarByClass(Main.class);
 			// set mapper/combiner/reducer
 			kMeans.setMapperClass(KMeans.KMeansMapper.class);
-			kMeans.setCombinerClass(KMeans.KMeansCombiner.class);
+//			kMeans.setCombinerClass(KMeans.KMeansCombiner.class);
 			kMeans.setReducerClass(KMeans.KMeansReducer.class);
 
 			// define mapper's output key-value
@@ -91,10 +91,12 @@ public class Main {
 				String r1 = reader.readLine();
 				String r2 = reader2.readLine();
 				System.out.println("====================");
-				System.out.println("data from r1: " + r1);
-				System.out.println("data from r2: " + r2);
+				System.out.println("r1: " + r1);
+				System.out.println("r2: " + r2);
 				System.out.println("====================");
-				if (!r1.equals(r2))
+				if (r1 == null && r2 == null)
+					break;
+				if (r2 == null || r1 == null && r2 != null || !r1.equals(r2))
 					isChanged = true;
 
 			}
@@ -104,13 +106,16 @@ public class Main {
 				hdfs.rename(new Path(otherArgs[4] + "/new"), new Path(otherArgs[4] + "/temp"));
 				hdfs.delete(new Path(otherArgs[4] + "/new"), true);
 			}
-			System.out.println("====================");
-			System.out.println(counter);
-			System.out.println("====================");
+
 			reader.close();
 			reader2.close();
-			counter--;
+			counter++;
 		}
+		System.out.println("====================");
+		System.out.println("time elapssed for convergance: " + (System.currentTimeMillis() - time));
+		System.out.println("counter: " + counter);
+		System.out.println("====================");
 	}
+	
 
 }

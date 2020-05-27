@@ -71,6 +71,8 @@ public class Test {
 		System.out.println(sumVectors1);
 		System.out.println(sumVectors2);
 		reader.close();
+		if("null".equals(null))
+			System.out.println("kir");
 		
 	}
 
