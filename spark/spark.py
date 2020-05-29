@@ -6,13 +6,15 @@ from pyspark import SparkContext
 def create_vector(line):
     vector= []
     vector= line.split(",")
-    del vector[0]
-    #now we should obtain the vector component only
     return vector
 
-#def select_random_centroid(line, k, columns):
-    
+def select_random_centroid(point, indexes):
+    if point[0] in indexes:
+        return point
 
+def assign_to_cluster(point, centroid): 
+    #compute the distance from each centroid and output the key corrisponing to the nearest 
+    print("tets")
 
 if __name__ == "__main__":
     if len(sys.argv) !=6 :
@@ -38,14 +40,31 @@ if __name__ == "__main__":
     master = "local"
     sc = SparkContext(master, "K-means")
 
+    #set a maximum number of iteration
+    iteration= 100
+
     lines = sc.textFile(sys.argv[5])
 
-    datapoints=lines.flatMap(create_vector)
+    datapoints=lines.flatMap(lambda point : create_vector(point))
 
     #select random indexes
     indexes= random.sample(range(rows), k)
 
-    #first_centroid = 
+    centroid = lines.flatMap(lambda point : select_random_centroid(point, indexes))
+    finish= False
+
+    while iteration>0 or not finish:
+        data_assigned = datapoints.map(lambda point : assign_to_cluster(point, centroid) ) #this should return a (assigned_cluster, datapoint) pair 
+
+        data_assigned.reduceByKey(...) #calculate the new centroid summing each component and dividing the number
+
+        #compare between two iteration and set condition "finish"
+
+    #save the centroid (how to consider the centroid that are not point?)
+
+
+
+
 
     
 
