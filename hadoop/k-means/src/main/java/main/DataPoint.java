@@ -66,10 +66,8 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 	}
 
 	public double distance(DataPoint that, int n) {
-		double x = Math.pow(this.norm(n), n) + Math.pow(that.norm(n), n) - IntStream.range(0, that.vector.size())
-				.mapToDouble(i -> 2 * this.vector.get(i) * that.vector.get(i)).sum();
-		if (x < 0)
-			return 0;
+		double x = Math.abs(Math.pow(this.norm(n), n) + Math.pow(that.norm(n), n) - IntStream.range(0, that.vector.size())
+				.mapToDouble(i -> 2 * this.vector.get(i) * that.vector.get(i)).sum());
 		return Math.pow(x, (double) 1 / n);
 	}
 
@@ -81,23 +79,13 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 	}
 
 	public int findNearestCentroid(ArrayList<DataPoint> centroids) {
-//		this.minDistance = Double.MAX_VALUE;
-//		int index = -1;
-//		for (DataPoint cent : centroids) {
-//			double dist = this.distance(cent, 2);
-//			if (dist < this.minDistance) {
-//				this.minDistance = dist;
-//				index++;
-//			}
-//		}
-
 		double minDistance = Double.MAX_VALUE;
 		int index = -1;
 		for (DataPoint cent : centroids) {
 			double dist = this.distance(cent, 2);
 			if (dist < minDistance) {
 				minDistance = dist;
-				index++;
+				index = centroids.indexOf(cent);
 			}
 		}
 		return index;

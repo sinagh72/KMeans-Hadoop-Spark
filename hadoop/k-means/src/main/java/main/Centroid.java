@@ -117,6 +117,7 @@ public class Centroid {
 			DataPoint p = new DataPoint();
 			String[] vals = line.trim().split(";");
 			p.set(vals[1].split(","));
+			System.out.println(p.toString());
 			centroids.set(Integer.parseInt(vals[0]), p);
 		}
 		reader.close();
