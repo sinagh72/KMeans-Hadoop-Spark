@@ -47,7 +47,6 @@ def vector_sum (key_value): #here is (k, list of points in key_value form)
 
 
 
-
 if __name__ == "__main__":
     if len(sys.argv) !=7 :
         print("Usage: K-means <k> <rows> <columns> <threshold> <input file> <output file>", file=sys.stderr)
@@ -74,7 +73,7 @@ if __name__ == "__main__":
     sc = SparkContext(master, "K-means")
     sc.setLogLevel("WARN")
     #set a maximum number of iteration
-    iteration= 3
+    iteration= 10
 
     lines = sc.textFile(sys.argv[5])
 
@@ -86,18 +85,18 @@ if __name__ == "__main__":
     centroids = datapoints.flatMap(lambda point : select_random_centroid(point, indexes)).collect()
     finish= False
 
-    print("CENTROID_RANDOM: ", centroids)
-    print("INDICI: ",indexes)
+    #print("CENTROID_RANDOM: ", centroids)
+    #print("INDICI: ",indexes)
 
     while iteration>0 and not finish:
-        data_assigned = datapoints.map(lambda point : assign_to_cluster(point, centroids) ) #this should return a (assigned_cluster, datapoint) pair
+        data_assigned = datapoints.map(lambda point : assign_to_cluster(point, centroids)) #this should return a (assigned_cluster, datapoint) pair
         groupped= data_assigned.groupByKey().mapValues(list)
-        print("GROUPPED: ",groupped.collect())
+        #print("GROUPPED: ",groupped.collect())
         new_centroids= groupped.map(lambda rdd: vector_sum(rdd)).collect()
 
         finish=True
 
-        print("ITERAZIONE ",iteration,": ",  new_centroids)
+        #print("ITERAZIONE ",iteration,": ",  new_centroids)
 
         #stop condition
         for i in range(k):
@@ -107,10 +106,6 @@ if __name__ == "__main__":
         centroids=new_centroids
 
         iteration-=1
-        #print(data_assigned.collect())
-        #print(groupped.collect())
-        #print(new_centroid.collect())
-
 
 
     print(centroids)
