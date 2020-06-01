@@ -1,7 +1,7 @@
 from pyspark import SparkContext
 import random
 import numpy as np
-
+import time
 import argparse
 parser = argparse.ArgumentParser()
 
@@ -85,6 +85,8 @@ inputs=get_inputs(args.filename,args.test,quantity,dims, limit)
 # quit()
 
 sp_inputs=sc.parallelize(inputs)
+# Start measuring time
+start = time.time()
 
 withReplacement = False
 numberToTake = k
@@ -129,4 +131,8 @@ while(not break_loop):
     mus=new_clusters.collect()
     iteration+=1
 
+end = time.time()
+
 print("centroids: ", mus)
+
+print("Time ellapsed: " + str(end - start) + " seconds")
