@@ -13,6 +13,7 @@ parser.add_argument("-d","--dims", type=int,help="Specify the amount of dimensio
 parser.add_argument("-l","--limit", type=int,help="Specify the upper limit of each feature (dimension) of synthetic data", default=20)
 parser.add_argument("-q","--quantity", type=int,help="Specify the amount of synthetic data", default=1000)
 parser.add_argument("-k", type=int,help="Specify the amount of k means", default=7)
+parser.add_argument("-ss","--save_synthetic",help="Path to the save generated file and EXIT", default="")
 parser.add_argument("-g", "--graph",
                     help="Show matplotlib graph", action="store_true", default=False)
 parser.add_argument("-v", "--verbosity",
@@ -31,10 +32,26 @@ def get_inputs(filename="",test=True, quantity=20, dims=2, limit=20):
     if(filename==""):
         for i in range(0,quantity):
             element=[]
+
+            if(args.save_synthetic != ""):
+                element.append(str(i))
+
             for j in range(0, dims):
-                feature=random.randint(0,limit)
-                element.append(feature)
-            inputs.append(element)
+                feature=random.uniform(0,limit)
+
+                if(args.save_synthetic != ""):
+                    element.append(str(feature))
+                else:
+                    element.append(feature)
+
+            inputs.append(",".join(element) + "\n")
+        
+        if(args.save_synthetic != ""):
+            with open(args.save_synthetic, "w") as f:
+                f.writelines(inputs)
+            print("Synthetic Data saved, exiting...")
+            exit()
+
         return inputs
     else:
         # load from file
@@ -45,7 +62,7 @@ def get_inputs(filename="",test=True, quantity=20, dims=2, limit=20):
                 line=line[:-1].split(",")[1:]
                 features=[]
                 for feature in line:
-                    features.append(int(feature))
+                    features.append(float(feature))
                 inputs.append(features)
         return inputs
 
@@ -73,7 +90,7 @@ def get_break_loop(mus, new_clusters):
 k=args.k
 
 sc=SparkContext(appName="test", master=args.master)
-
+sc.setLogLevel("WARN")
 
 quantity=args.quantity
 dims=args.dims
