@@ -2,6 +2,7 @@ import sys
 from operator import add
 import random
 from pyspark import SparkContext
+import time
 
 def create_vector(line):
     vector= []
@@ -48,8 +49,8 @@ def vector_sum (key_value): #here is (k, list of points in key_value form)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) !=7 :
-        print("Usage: K-means <k> <rows> <columns> <threshold> <input file> <output file>", file=sys.stderr)
+    if len(sys.argv) !=8 :
+        print("Usage: K-means <k> <rows> <columns> <threshold> <master> <input file> <output file>", file=sys.stderr)
         sys.exit(-1)
 
 #parameter from the command line
@@ -57,8 +58,9 @@ if __name__ == "__main__":
     rows= int(sys.argv[2])
     columns = int(sys.argv[3])
     threshold =float(sys.argv[4])
-    input_file= sys.argv[5]
-    output_file= sys.argv[6]
+    mst= sys.argv[5]
+    input_file= sys.argv[6]
+    output_file= sys.argv[7]
 
     print("Number of cluster: "+ str(k))
     print("Number of vector: " + str(rows))
@@ -69,15 +71,17 @@ if __name__ == "__main__":
 
 
 #initialize spark context
-    master = "local"
-    sc = SparkContext(master, "K-means")
+    sc = SparkContext(appName="K-means", master=mst)
     sc.setLogLevel("WARN")
     #set a maximum number of iteration
-    iteration= 10
+    iteration= 1
 
-    lines = sc.textFile(sys.argv[5])
+    lines = sc.textFile(input_file)
 
+    start_time = time.time()
     datapoints=lines.map(lambda point : create_vector(point))
+    datapoints.cache()
+
     #select random indexes
     indexes= random.sample(range(rows), k)
 
@@ -85,18 +89,17 @@ if __name__ == "__main__":
     centroids = datapoints.flatMap(lambda point : select_random_centroid(point, indexes)).collect()
     finish= False
 
-    #print("CENTROID_RANDOM: ", centroids)
-    #print("INDICI: ",indexes)
-
-    while iteration>0 and not finish:
+    while not finish:
         data_assigned = datapoints.map(lambda point : assign_to_cluster(point, centroids)) #this should return a (assigned_cluster, datapoint) pair
         groupped= data_assigned.groupByKey().mapValues(list)
-        #print("GROUPPED: ",groupped.collect())
-        new_centroids= groupped.map(lambda rdd: vector_sum(rdd)).collect()
 
+        new_centroids_rdd= groupped.map(lambda rdd: vector_sum(rdd))
+        new_centroids= new_centroids_rdd.collect()
         finish=True
 
-        #print("ITERAZIONE ",iteration,": ",  new_centroids)
+        #antiloop fix
+        new_centroids.sort(key= lambda x: x[1][0])
+        print("ITERAZIONE ",iteration,": ",  new_centroids)
 
         #stop condition
         for i in range(k):
@@ -105,7 +108,20 @@ if __name__ == "__main__":
 
         centroids=new_centroids
 
-        iteration-=1
+        iteration+=1
 
+    #output step
+    data_assigned.saveAsTextFile(output_file+"-1")
+    new_centroids_rdd.saveAsTextFile(output_file)
 
-    print(centroids)
+    #write test, iteration , time
+    stop_time= time.time()
+    time_eff=stop_time-start_time
+    r=open("risultati.txt", "a")
+    r.write(str(rows)+ ", "+str(columns)+ ", "+str(k)+", "+str(iteration)+", "+str(time_eff)+"\n")
+    r.close()
+    #f=open(output_file+str(rows)+"-"+str(columns)+ "-"+str(k), "w")
+    #f.write("CENTROIDS\n\n")
+    #for elem in centroids:
+        #f.write(str(elem)+ "\n")
+    #f.close()
