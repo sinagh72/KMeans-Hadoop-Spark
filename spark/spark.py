@@ -83,6 +83,7 @@ if __name__ == "__main__":
     datapoints.cache()
 
     #select random indexes
+    random.seed()
     indexes= random.sample(range(rows), k)
 
     #extract centroid from the datapoint
