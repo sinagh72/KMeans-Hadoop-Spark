@@ -92,9 +92,9 @@ if __name__ == "__main__":
 
     while not finish:
         data_assigned = datapoints.map(lambda point : assign_to_cluster(point, centroids)) #this should return a (assigned_cluster, datapoint) pair
-        groupped= data_assigned.groupByKey().mapValues(list)
+        grouped= data_assigned.groupByKey().mapValues(list)
 
-        new_centroids_rdd= groupped.map(lambda rdd: vector_sum(rdd))
+        new_centroids_rdd= grouped.map(lambda rdd: vector_sum(rdd))
         new_centroids= new_centroids_rdd.collect()
         finish=True
 
