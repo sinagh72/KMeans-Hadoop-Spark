@@ -1,7 +1,6 @@
 from flask import Flask
 from openstack import connection
 from flask import request
-import sched
 from datetime import datetime
 import threading
 import sched, time
