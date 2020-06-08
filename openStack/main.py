@@ -31,6 +31,9 @@ def server_handler():
         if not request.is_json:
             return jsonify(error=str("payload must be josn")), 400
         content = request.get_json()
+        #checing if the start < end
+        if (datetime.strptime(content['start_peak'], '%Y/%m/%d %H:%M:%S') - datetime.strptime(content['end_peak'], '%Y/%m/%d %H:%M:%S')).total_seconds() > 0:
+            return jsonify(error=str("start peak must be less than end peak")), 400
         #set the starter
         a = time_handler(content=content, key='start_peak', func=create_server)
         #set the end
@@ -49,10 +52,11 @@ def server_handler():
 def create_server(content):
     global data
     global conn
+
     for i in range(0,content["vm_numbers"]):
-        server = conn.compute.create_server(name="scheduled_vm"+str(i), image_id=data[content["image"]+"-img"], flavor_id=data[content["flavor"]+"-flv"],
+        server = conn.compute.create_server(name="scheduled_vm"+str(i)+content['start_peak']+content['end_peak'], image_id=data[content["image"]+"-img"], flavor_id=data[content["flavor"]+"-flv"],
         networks=[{"uuid": data["internal-net"]}])
-        data["scheduled_vm"+str(i)+'-srv'] = server.id
+        data["scheduled_vm"+str(i)+content['start_peak']+content['end_peak']+'-srv'] = server.id
         server = conn.compute.wait_for_server(server)
     
 
@@ -60,7 +64,7 @@ def delete_server(content):
     global data
     global conn
     for i in range(0,content["vm_numbers"]):
-        conn.compute.delete_server(data["scheduled_vm"+str(i)+'-srv'])
+        conn.compute.delete_server(data["scheduled_vm"+str(i)+content['start_peak']+content['end_peak']+'-srv'])
     
 def time_handler(content, key, func, priority=1):
     global scheduler
