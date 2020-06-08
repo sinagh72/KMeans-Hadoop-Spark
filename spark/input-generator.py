@@ -3,7 +3,7 @@ val = 1000000
 
 for k in [7,13]:
     for m in [3,7]:
-        for n in [1000,10000,100000]:            
+        for n in [1000,10000,100000, 1000000]:            
             A = np.random.randint(val/2, size=(n, m))  
 
             B = np.zeros((n,m+1))  

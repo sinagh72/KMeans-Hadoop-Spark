@@ -11,10 +11,6 @@ def create_vector(line):
         vector[i] = float(vector[i])
     return (int(vector[0]), vector[1:])
 
-def select_random_centroid(point, indexes):
-    if point[0] in indexes:
-        return [point] #key, value
-    return []
 
 def assign_to_cluster(point, centroids):
     #compute the distance from each centroid and output the key corrisponing to the nearest
@@ -82,12 +78,12 @@ if __name__ == "__main__":
     datapoints=lines.map(lambda point : create_vector(point))
     datapoints.cache()
 
-    #select random indexes
-    random.seed()
-    indexes= random.sample(range(rows), k)
+    #select random centroids
+    withReplacement = False
+    numberToTake = k
+    randomSeed =int(time.time())
+    centroids=datapoints.takeSample(withReplacement, numberToTake, randomSeed)
 
-    #extract centroid from the datapoint
-    centroids = datapoints.flatMap(lambda point : select_random_centroid(point, indexes)).collect()
     finish= False
 
     while not finish:
@@ -121,8 +117,3 @@ if __name__ == "__main__":
     r=open("risultati.txt", "a")
     r.write(str(rows)+ ", "+str(columns)+ ", "+str(k)+", "+str(iteration)+", "+str(time_eff)+"\n")
     r.close()
-    #f=open(output_file+str(rows)+"-"+str(columns)+ "-"+str(k), "w")
-    #f.write("CENTROIDS\n\n")
-    #for elem in centroids:
-        #f.write(str(elem)+ "\n")
-    #f.close()
