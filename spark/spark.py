@@ -7,9 +7,9 @@ import time
 def create_vector(line):
     vector= []
     vector= line.split(",")
-    for i in range(len(vector)):
+    for i in range(1,len(vector)):
         vector[i] = float(vector[i])
-    return (int(vector[0]), vector[1:])
+    return vector[1:]
 
 
 def assign_to_cluster(point, centroids):
@@ -17,7 +17,7 @@ def assign_to_cluster(point, centroids):
     idx=0
     min_dist=float("inf")
     for centroid in centroids:
-        dist=distance(point[1], centroid[1]) #they are key-value element
+        dist=distance(point, centroid) 
         if dist<min_dist:
             min_dist= dist
             idx=centroids.index(centroid)
@@ -39,8 +39,8 @@ def vector_sum (key_value): #here is (k, list of points in key_value form)
     key=key_value[0]
     points= key_value[1]
     count= len(points)
-    new_centroid=[sum(x)/count for x in zip(*[y[1] for y in points])]
-    return (key, new_centroid)
+    new_centroid=[sum(x)/count for x in zip(*points)]
+    return new_centroid
 
 
 
@@ -95,12 +95,12 @@ if __name__ == "__main__":
         finish=True
 
         #antiloop fix
-        new_centroids.sort(key= lambda x: x[1][0])
+        new_centroids.sort(key= lambda x: x[0])
         print("ITERAZIONE ",iteration,": ",  new_centroids)
 
         #stop condition
         for i in range(k):
-            if distance(new_centroids[i][1], centroids[i][1])>threshold:
+            if distance(new_centroids[i], centroids[i])>threshold:
                 finish=False
 
         centroids=new_centroids
