@@ -23,7 +23,7 @@ conn = None#connection obj
 scheduler = None#scheduler 
 
 @app.errorhandler(400)
-@app.route("/scheduled", methods=['POST'])
+@app.route("/setPeakTime", methods=['POST'])
 def server_handler():
     global scheduler
     try:
