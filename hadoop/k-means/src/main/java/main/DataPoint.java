@@ -27,19 +27,13 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 		// TODO Auto-generated method stub
 		if (this == that)
 			return 0;
-//		if (this.minDistance > that.minDistance)
-//			return 1;
-//		if (this.minDistance < that.minDistance)
-//			return -1;
-//		if (this.minDistance == that.minDistance) {
 		if (this.norm(2) > that.norm(2))
 			return 1;
 		if (this.norm(2) < that.norm(2))
 			return -1;
 		else
 			return 0;
-//		}
-//		return 0;
+
 	}
 
 	@Override
@@ -91,14 +85,6 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 		return index;
 	}
 
-//	public double getMinDistance() {
-//		return minDistance;
-//	}
-//
-//	public void addMinDistance(double minDistance) {
-//		this.minDistance += minDistance;
-//	}
-
 	public ArrayList<Double> getVector() {
 		return vector;
 	}
@@ -110,7 +96,6 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 
 	@Override
 	public void write(DataOutput out) throws IOException {
-//		String outStr = this.toString() + ";" + this.minDistance;
 		String outStr = this.toString();
 		new Text(outStr.trim()).write(out);
 
@@ -120,9 +105,6 @@ public class DataPoint implements Writable, Comparable<DataPoint> {
 	public void readFields(DataInput in) throws IOException {
 		Text t = new Text();
 		t.readFields(in);
-//		String[] vals = t.toString().split(";");
-//		this.minDistance = Double.parseDouble(vals[1]);
-//		String[] vector = vals[0].split(",");
 		this.set(t.toString().split(","));
 
 	}
