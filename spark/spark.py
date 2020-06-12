@@ -36,7 +36,6 @@ def distance (p1, p2):
 
 
 def vector_sum (key_value): #here is (k, list of points in key_value form)
-    key=key_value[0]
     points= key_value[1]
     count= len(points)
     new_centroid=[sum(x)/count for x in zip(*points)]
@@ -69,7 +68,7 @@ if __name__ == "__main__":
 #initialize spark context
     sc = SparkContext(appName="K-means", master=mst)
     sc.setLogLevel("WARN")
-    #set a maximum number of iteration
+    
     iteration= 1
 
     lines = sc.textFile(input_file)
