@@ -1,14 +1,23 @@
 package main;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class KMeans {
 	public static class KMeansMapper extends Mapper<LongWritable, Text, Text, Text> {
@@ -99,21 +108,93 @@ public class KMeans {
 				sumVectors[j] /= n;
 			}
 
-//			List<DataPoint> dataPoints = new ArrayList<DataPoint>();
-//			for (DataPoint dp : values) {
-//				dataPoints.add(DataPoint.copy(dp));
-//			}
-//			ArrayList<Double> sumVectors = new ArrayList<Double>(
-//					Collections.nCopies(dataPoints.get(0).getVector().size(), (double) 0));
-//
-//			dataPoints.forEach(dp -> {
-//				for (int j = 0; j < dp.getVector().size(); j++) {
-//					sumVectors.set(j, dp.getVector().get(j) / dataPoints.size() + sumVectors.get(j));
-//				}
-//			});
-//
 			context.write(new Text(key + ";"), new Text(Arrays.toString(sumVectors).replace("[", "").replace("]", "")));
 
 		}
+	}
+
+	public static void run(long maxItr, Configuration conf, boolean combiner, int reducers, int k, int m, int n,
+			double threshold, String inputPath, String outputPath)
+			throws IOException, ClassNotFoundException, InterruptedException {
+		FileSystem hdfs = FileSystem.get(conf);
+		long time = System.currentTimeMillis();
+		boolean isChanged = true;
+		int counter = 0;
+		while (isChanged && counter < maxItr) {
+			Job kMeans = Job.getInstance(conf, "MapReduceKMeans");
+			kMeans.setJarByClass(Main.class);
+			// set mapper/combiner/reducer
+			kMeans.setMapperClass(KMeans.KMeansMapper.class);
+			if (combiner)// the the combiner
+				kMeans.setCombinerClass(KMeans.KMeansCombiner.class);
+			kMeans.setReducerClass(KMeans.KMeansReducer.class);
+			// set the number of reducers
+			kMeans.setNumReduceTasks(reducers);
+			// define mapper's output key-value
+			kMeans.setMapOutputKeyClass(Text.class);
+			kMeans.setMapOutputValueClass(Text.class);
+			// define reducer's output key-value
+
+			// define reducer's output key-value
+			kMeans.setOutputKeyClass(Text.class);
+			kMeans.setOutputValueClass(Text.class);
+
+			// pass the number of cluster
+			kMeans.getConfiguration().setInt("k-means.cluster.number", k);
+			// pass the file of a selected centroids
+			kMeans.getConfiguration().setStrings("k-means.centroid.path", outputPath + "/temp/part-r-00000");
+			// pass the rows
+			kMeans.getConfiguration().setInt("k-means.rows", n);
+			// pass the columns
+			kMeans.getConfiguration().setInt("k-means.columns", m);
+			// define I/O
+			FileInputFormat.addInputPath(kMeans, new Path(inputPath));
+			FileOutputFormat.setOutputPath(kMeans, new Path(outputPath + "/new"));
+
+			kMeans.setInputFormatClass(TextInputFormat.class);
+			kMeans.setOutputFormatClass(TextOutputFormat.class);
+
+			int out = kMeans.waitForCompletion(true) ? 0 : 1;
+			System.out.println(out);
+			//
+			isChanged = false;
+			// check if the centroids values has been changed or not
+
+			BufferedReader reader = new BufferedReader(
+					new InputStreamReader(hdfs.open(new Path(outputPath + "/temp/part-r-00000"))));
+			BufferedReader reader2 = new BufferedReader(
+					new InputStreamReader(hdfs.open(new Path(outputPath + "/new/part-r-00000"))));
+			for (int i = 0; i < k; i++) {
+				String r1 = reader.readLine();
+				String r2 = reader2.readLine();
+				if (r1 != null && r2 != null) {
+					DataPoint p1 = new DataPoint();
+					p1.set(r1.trim().split(";")[1].split(","));
+					DataPoint p2 = new DataPoint();
+					p2.set(r2.trim().split(";")[1].split(","));
+					if (p1.distance(p2, 2) > threshold) {
+						isChanged = true;
+					}
+				}
+				System.out.println("====================");
+				System.out.println("r1: " + r1);
+				System.out.println("r2: " + r2);
+				System.out.println("====================");
+			}
+			if (isChanged) {
+				System.out.println("changed");
+				hdfs.delete(new Path(outputPath + "/temp"), true);
+				hdfs.rename(new Path(outputPath + "/new"), new Path(outputPath + "/temp"));
+				hdfs.delete(new Path(outputPath + "/new"), true);
+			}
+
+			reader.close();
+			reader2.close();
+			counter++;
+		}
+		System.out.println("====================");
+		System.out.println("time elapssed for convergance: " + (System.currentTimeMillis() - time));
+		System.out.println("counter: " + counter);
+		System.out.println("====================");
 	}
 }
